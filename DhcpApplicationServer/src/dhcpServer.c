@@ -2,22 +2,25 @@
 #include <string.h>
 #include "linkList.h"
 
-#define MAX_BYTE 1024
-#define SERVER_SOCKET 67
-#define CLIENT_SOCKET 68
-#define CLIENT_ADDRESS "255.255.255.255"
-
-#define DHCP_PACKET_SIZE 236
-
 const char dhcpMagicCookie[4] = {0x63, 0x82, 0x53, 0x63};
 const char offerIp[4] = {192, 168, 1, 25};
 
 int sock;
 struct sockaddr_in server_sock;
+struct netif *serverNetif;
 
+void fillDhcpPacket(dhcp_msg *request, dhcp_msg *reply, uint8_t type, const uint8_t *address);
+void answerClientRequest(dhcp_option *option, dhcp_msg *reply);
+void sendDhcpReply(dhcp_message *dhcp_msg);
+int discoverPacketHandler(dhcp_msg *request, dhcp_msg *reply);
+int requestPacketHandler(dhcp_msg *request, dhcp_msg *reply);
+
+// Start the dhcp application
 int start_application(struct netif *netif)
 {
     int enable_broadcast = 1;
+    serverNetif = netif;
+
     xil_printf("DHCP server is starting...\n");
     // Create the socket
 
@@ -37,7 +40,7 @@ int start_application(struct netif *netif)
     server_sock.sin_family = AF_INET;
     server_sock.sin_port = htons(SERVER_SOCKET);
     server_sock.sin_addr.s_addr = htonl(IPADDR_ANY);
-    //  server_sock.sin_addr.s_addr = netif->ip_addr.addr;
+    // server_sock.sin_addr.s_addr = netif->ip_addr.addr;
 
     if (bind(sock, (struct sockaddr *)&server_sock, sizeof(server_sock)) < 0)
     {
@@ -47,148 +50,9 @@ int start_application(struct netif *netif)
     xil_printf("DHCP Server is listening on %d", (int)server_sock.sin_port);
     return 1;
 }
-void deleteOptionList(dhcp_option_list *dhcpOptionList)
-{
-    dhcp_option_list *ptr;
-    dhcp_option_list *temp;
 
-    ptr = dhcpOptionList;
-    while (ptr != NULL)
-    {
-        temp = ptr->next_option;
-        free(ptr);
-        ptr = temp;
-    }
-}
-int parseDhcpOption(dhcp_option *option, uint8_t *optionPtr)
-{
-    int optionLen;
-    option->id = *optionPtr;
-    option->len = *(optionPtr + 1);
-    memcpy(option->data, optionPtr + 2, option->len);
-    optionLen = option->len + 2;
-
-    return optionLen;
-}
-
-int parseDhcpOptionList(dhcp_msg *msg)
-{
-    dhcp_option_list *optionListPtr;
-    uint8_t *optionArrayPtr = msg->hdr.options;
-    int nextOptionPos;
-
-    msg->opts = malloc(sizeof(dhcp_option_list));
-    optionListPtr = msg->opts;
-
-    while (*optionArrayPtr != END)
-    {
-        nextOptionPos = parseDhcpOption(&optionListPtr->dhcp_option, optionArrayPtr);
-        optionListPtr->next_option = malloc(sizeof(dhcp_option_list));
-        optionListPtr = optionListPtr->next_option;
-        optionArrayPtr += nextOptionPos;
-    }
-    optionListPtr->next_option = NULL;
-    return 1;
-}
-
-dhcp_option *seachForOption(dhcp_option_list *optionList, int optionCode)
-{
-    while (optionList->next_option != NULL)
-    {
-        if (optionList->dhcp_option.id == optionCode)
-        {
-            return &(optionList->dhcp_option);
-        }
-    }
-    return NULL;
-}
-
-void init_reply(dhcp_msg *request, dhcp_msg *reply)
-{
-    memset(&reply->hdr, 0, sizeof(reply->hdr));
-
-    reply->hdr.op = BOOTREPLY;
-
-    reply->hdr.htype = request->hdr.htype;
-    reply->hdr.hlen = request->hdr.hlen;
-
-    reply->hdr.xid = request->hdr.xid;
-    reply->hdr.flags = request->hdr.flags;
-
-    reply->hdr.giaddr = request->hdr.giaddr;
-
-    memcpy(reply->hdr.chaddr, request->hdr.chaddr, request->hdr.hlen);
-}
-
-int appendOptionToArray(uint8_t *optionArrPtr, dhcp_option *option)
-{
-    int optionLen;
-    optionArrPtr[0] = option->id;
-    optionArrPtr[1] = option->len;
-    memcpy(optionArrPtr + 2, option->data, option->len);
-    optionLen = option->len + 2;
-    return optionLen;
-}
-
-void serializeOptionList(dhcp_msg *reply)
-{
-    uint8_t *optionArrPtr = reply->hdr.options;
-    dhcp_option_list *optionPtr = reply->opts;
-    int optionLen;
-
-    memcpy(reply->hdr.magicCookie, dhcpMagicCookie, sizeof(dhcpMagicCookie));
-
-    do
-    {
-        optionLen = appendOptionToArray(optionArrPtr, &(optionPtr->dhcp_option));
-        optionArrPtr += optionLen;
-        optionPtr = optionPtr->next_option;
-    } while (optionPtr != NULL);
-
-    *optionArrPtr = END;
-}
-// this one will be used to fill in the dhcp packet. Usually being used when sending
-// packet
-void fillDhcpPacket(dhcp_msg *request, dhcp_msg *reply, uint8_t type, const uint8_t *address)
-{
-    dhcp_option_list *typeOption = malloc(sizeof(dhcp_option_list));
-    typeOption->dhcp_option.data[0] = type;
-    typeOption->dhcp_option.id = DHCP_MESSAGE_TYPE;
-    typeOption->dhcp_option.len = 1;
-    typeOption->next_option = NULL;
-    reply->opts = typeOption;
-
-    if (address != NULL)
-    {
-        reply->hdr.yiaddr = *((uint32_t *)address);
-    }
-    serializeOptionList(reply);
-}
-void sendDhcpReply(dhcp_message *dhcp_msg)
-{
-    struct sockaddr_in dest;
-    int size = sizeof(*dhcp_msg);
-    memset(&dest, 0, sizeof(dest));
-    dest.sin_family = AF_INET;
-    dest.sin_addr.s_addr = INADDR_BROADCAST; // use broadcast address
-    dest.sin_port = htons(CLIENT_SOCKET);    // use a specific port
-    // client_sock->sin_addr.s_addr = dhcp_msg->yiaddr;
-    if (sendto(sock, dhcp_msg, size, 0, (struct sockaddr *)&dest, sizeof(dest)) < 0)
-    {
-        xil_printf("error bitch \n");
-    }
-}
-// this one will handling the discovery request
-int discoverPacketHandler(dhcp_msg *request, dhcp_msg *reply)
-{
-    fillDhcpPacket(request, reply, DHCP_OFFER, offerIp);
-    return 1;
-}
-void requestPacketHandler(dhcp_msg *request, dhcp_msg *reply)
-{
-    fillDhcpPacket(request, reply, DHCP_ACK, offerIp);
-}
 // This function will be used to listen to incoming packet and indentify it
+// if you want to listen to multiple client, just create another thread for this
 void dhcpListener()
 {
     xil_printf("Wait for DHCP Discovery Request");
@@ -209,18 +73,21 @@ void dhcpListener()
             continue;
         if (requestMsg.hdr.hlen < 1 || requestMsg.hdr.hlen > 16)
             continue;
+
+        // the magic cookie used to define the packet, the magic cookie for this is "DHCP"
         if (len - DHCP_PACKET_SIZE < 4 || memcmp(requestMsg.hdr.magicCookie, dhcpMagicCookie, sizeof(dhcpMagicCookie) != 0))
         {
             continue;
         }
         parseDhcpOptionList(&requestMsg);
 
+        // Seach for message type option to know what kind of packet we are dealing with
         dhcp_option *typeOption = seachForOption(requestMsg.opts, DHCP_MESSAGE_TYPE);
         if (typeOption == NULL)
         {
             continue;
         }
-        init_reply(&requestMsg, &replyMsg);
+        // we only serve 2 type of request this time but you can add more in the future
         switch (typeOption->data[0])
         {
         case DHCP_DISCOVER:
@@ -240,7 +107,124 @@ void dhcpListener()
             break;
         }
         sendDhcpReply(&(replyMsg.hdr));
+
+        // clean the option linked list to prevent memory leak
         deleteOptionList(replyMsg.opts);
         deleteOptionList(requestMsg.opts);
     }
+}
+
+// this one will be used to fill in the dhcp packet. Usually being used when sending
+// packet
+void fillDhcpPacket(dhcp_msg *request, dhcp_msg *reply, uint8_t type, const uint8_t *address)
+{
+    dhcp_option_list *typeOption = malloc(sizeof(dhcp_option_list));
+    memset(&reply->hdr, 0, sizeof(reply->hdr));
+
+    // fill in the required parametter to match client
+    reply->hdr.op = BOOTREPLY;
+    reply->hdr.htype = request->hdr.htype;
+    reply->hdr.hlen = request->hdr.hlen;
+    reply->hdr.xid = request->hdr.xid;
+    reply->hdr.flags = request->hdr.flags;
+    reply->hdr.giaddr = request->hdr.giaddr;
+
+    memcpy(reply->hdr.chaddr, request->hdr.chaddr, request->hdr.hlen);
+    memcpy(reply->hdr.magicCookie, dhcpMagicCookie, sizeof(dhcpMagicCookie));
+
+    // Message type option
+    typeOption->dhcp_option.data[0] = type;
+    typeOption->dhcp_option.id = DHCP_MESSAGE_TYPE;
+    typeOption->dhcp_option.len = 1;
+    typeOption->next_option = NULL;
+
+    // the first option of the reply is what kind of dhcp packet this is
+    reply->opts = typeOption;
+
+    // fill in client adress
+    if (address != NULL)
+    {
+        reply->hdr.yiaddr = *((uint32_t *)address);
+    }
+}
+
+// This function will answer client parametter request
+// We will only answer 2 request this time, but you can add new one in the future
+void answerClientRequest(dhcp_option *option, dhcp_msg *reply)
+{
+    int count;
+    while (count < option->len)
+    {
+        dhcp_option newOption;
+        switch (option->data[count])
+        {
+        // respond to subnet mask request
+        case SUBNET_MASK:
+            newOption = getSubnetPara((uint8_t *)&(serverNetif->netmask));
+            appendOptionToList(reply, &newOption);
+            break;
+        // respond to gateway request
+        case ROUTER:
+            newOption = getGatewayPara((uint8_t *)&(serverNetif->gw));
+            appendOptionToList(reply, &newOption);
+            break;
+        default:
+            break;
+        }
+        count++;
+    }
+}
+
+// send the dhcp reply to client, we will send a broadcast message
+// what if multiple client listen at the same time? i dont fk know
+void sendDhcpReply(dhcp_message *dhcp_msg)
+{
+    struct sockaddr_in dest;
+    int size = sizeof(*dhcp_msg);
+    memset(&dest, 0, sizeof(dest));
+    dest.sin_family = AF_INET;
+    dest.sin_addr.s_addr = INADDR_BROADCAST; // use broadcast address
+    dest.sin_port = htons(CLIENT_SOCKET);    // use a specific port
+    // client_sock->sin_addr.s_addr = dhcp_msg->yiaddr;
+    if (sendto(sock, dhcp_msg, size, 0, (struct sockaddr *)&dest, sizeof(dest)) < 0)
+    {
+        xil_printf("error bitch \n");
+    }
+}
+
+// this one will handling the discovery request
+int discoverPacketHandler(dhcp_msg *request, dhcp_msg *reply)
+{
+    dhcp_option *parametterRequestOption;
+    // fill in the the packet
+    fillDhcpPacket(request, reply, DHCP_OFFER, offerIp);
+
+    // Seach for parametter request option
+    parametterRequestOption = seachForOption(request->opts, PARAMETER_REQUEST_LIST);
+    if (parametterRequestOption)
+    {
+        answerClientRequest(parametterRequestOption, reply);
+    }
+    dhcp_option option = getLeaseTimeOption(0xFFFFFFFF);
+    appendOptionToList(reply, &option);
+    serializeOptionList(reply);
+    return 1;
+}
+
+// this one will handle the request packet
+int requestPacketHandler(dhcp_msg *request, dhcp_msg *reply)
+{
+    dhcp_option *parametterRequestOption;
+    fillDhcpPacket(request, reply, DHCP_ACK, offerIp);
+
+    parametterRequestOption = seachForOption(request->opts, PARAMETER_REQUEST_LIST);
+    if (parametterRequestOption)
+    {
+        answerClientRequest(parametterRequestOption, reply);
+    }
+    // set the lease time to be infinity because we only serve one client this time
+    dhcp_option option = getLeaseTimeOption(0xFFFFFFFF);
+    appendOptionToList(reply, &option);
+    serializeOptionList(reply);
+    return 1;
 }

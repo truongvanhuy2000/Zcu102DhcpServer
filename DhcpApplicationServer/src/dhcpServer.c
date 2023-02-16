@@ -1,5 +1,6 @@
 #include "dhcpServer.h"
 #include <string.h>
+#include "linkList.h"
 
 #define MAX_BYTE 1024
 #define SERVER_SOCKET 67
@@ -8,7 +9,7 @@
 
 #define DHCP_PACKET_SIZE 236
 
-const char magicCookie[4] = {0x63, 0x82, 0x53, 0x63};
+const char dhcpMagicCookie[4] = {0x63, 0x82, 0x53, 0x63};
 const char offerIp[4] = {192, 168, 1, 25};
 
 int sock;
@@ -43,11 +44,6 @@ int start_application(struct netif *netif)
         xil_printf("Bind Server Address with Socket error Error\r\n");
         return 0;
     }
-    //    while(1)
-    //    {
-    //    	sendDhcpReply("asdasdas");
-    //    	sleep(1);
-    //    }
     xil_printf("DHCP Server is listening on %d", (int)server_sock.sin_port);
     return 1;
 }
@@ -75,22 +71,15 @@ int parseDhcpOption(dhcp_option *option, uint8_t *optionPtr)
     return optionLen;
 }
 
-int parseDhcpOptionList(dhcp_msg *msg, int len)
+int parseDhcpOptionList(dhcp_msg *msg)
 {
     dhcp_option_list *optionListPtr;
-    uint8_t *optionArrayPtr;
+    uint8_t *optionArrayPtr = msg->hdr.options;
     int nextOptionPos;
 
-    optionArrayPtr = msg->hdr.options;
-
-    // extract magic cookie
-    if (len < 4 || memcmp(optionArrayPtr, magicCookie, sizeof(magicCookie) != 0))
-    {
-        return 0;
-    }
-    optionArrayPtr += 4;
     msg->opts = malloc(sizeof(dhcp_option_list));
     optionListPtr = msg->opts;
+
     while (*optionArrayPtr != END)
     {
         nextOptionPos = parseDhcpOption(&optionListPtr->dhcp_option, optionArrayPtr);
@@ -130,6 +119,7 @@ void init_reply(dhcp_msg *request, dhcp_msg *reply)
 
     memcpy(reply->hdr.chaddr, request->hdr.chaddr, request->hdr.hlen);
 }
+
 int appendOptionToArray(uint8_t *optionArrPtr, dhcp_option *option)
 {
     int optionLen;
@@ -139,22 +129,22 @@ int appendOptionToArray(uint8_t *optionArrPtr, dhcp_option *option)
     optionLen = option->len + 2;
     return optionLen;
 }
+
 void serializeOptionList(dhcp_msg *reply)
 {
-    uint8_t *optionArrPtr;
-    dhcp_option_list *optionPtr;
+    uint8_t *optionArrPtr = reply->hdr.options;
+    dhcp_option_list *optionPtr = reply->opts;
     int optionLen;
 
-    optionPtr = reply->opts;
-    optionArrPtr = reply->hdr.options;
-    memcpy(reply->hdr.options, magicCookie, sizeof(magicCookie));
-    optionArrPtr += 4;
+    memcpy(reply->hdr.magicCookie, dhcpMagicCookie, sizeof(dhcpMagicCookie));
+
     do
     {
         optionLen = appendOptionToArray(optionArrPtr, &(optionPtr->dhcp_option));
         optionArrPtr += optionLen;
         optionPtr = optionPtr->next_option;
     } while (optionPtr != NULL);
+
     *optionArrPtr = END;
 }
 // this one will be used to fill in the dhcp packet. Usually being used when sending
@@ -219,17 +209,18 @@ void dhcpListener()
             continue;
         if (requestMsg.hdr.hlen < 1 || requestMsg.hdr.hlen > 16)
             continue;
-
-        parseDhcpOptionList(&requestMsg, len - DHCP_PACKET_SIZE);
+        if (len - DHCP_PACKET_SIZE < 4 || memcmp(requestMsg.hdr.magicCookie, dhcpMagicCookie, sizeof(dhcpMagicCookie) != 0))
+        {
+            continue;
+        }
+        parseDhcpOptionList(&requestMsg);
 
         dhcp_option *typeOption = seachForOption(requestMsg.opts, DHCP_MESSAGE_TYPE);
         if (typeOption == NULL)
         {
             continue;
         }
-
         init_reply(&requestMsg, &replyMsg);
-
         switch (typeOption->data[0])
         {
         case DHCP_DISCOVER:

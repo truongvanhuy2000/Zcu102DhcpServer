@@ -51,7 +51,9 @@ struct dhcp_message
 
     uint8_t file[128]; // boot file name
 
-    uint8_t options[312]; // optional parameters field
+    uint8_t magicCookie[4]; //use to identify the packet
+
+    uint8_t options[308]; // optional parameters field
 };
 
 typedef struct dhcp_message dhcp_message;

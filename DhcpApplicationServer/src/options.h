@@ -124,47 +124,5 @@ enum {
 
 };
 
-// struct dhcp_option {
-//     uint8_t id;        // option id
-//     uint8_t len;       // option length
-//     uint8_t data[256]; // option data
-
-//     TAILQ_ENTRY(dhcp_option) pointers; // pointers, see queue(3)
-// };
-
-// typedef struct dhcp_option dhcp_option;
-
-// typedef TAILQ_HEAD(dhcp_option_list_, dhcp_option) DHCP_OPTION_LIST;
-// typedef struct dhcp_option_list_ dhcp_option_list;
-
-/* Value parsing functions:
- *
- * Parse the string pointed by s, and allocate the
- * pointer p to contain the parsed data.
- * 
- * On success return the size of the parsed data,
- * on error return zero.
- */
-//
-//int parse_byte (char *s, void **p);
-//int parse_byte_list (char *s, void **p);
-//int parse_short (char *s, void **p);
-//int parse_short_list (char *s, void **p);
-//int parse_long (char *s, void **p);
-//int parse_string (char *s, void **p);
-//int parse_ip (char *s, void **p);
-//int parse_ip_list (char *s, void **p);
-//int parse_mac (char *s, void **p);
-//
-///* Other prototypes */
-//
-//void init_option_list (dhcp_option_list *list);
-//uint8_t parse_option (dhcp_option *option, char *name, char *value);
-//dhcp_option * search_option (dhcp_option_list *list, uint8_t id);
-//void print_options (dhcp_option_list *list);
-//void append_option (dhcp_option_list *list, dhcp_option *opt);
-//int parse_options_to_list (dhcp_option_list *list, dhcp_option *opts, size_t len);
-//size_t serialize_option_list (dhcp_option_list *list, uint8_t *buf, size_t len);
-//void delete_option_list (dhcp_option_list *list);
 
 #endif

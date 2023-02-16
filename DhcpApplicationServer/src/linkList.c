@@ -1,9 +1,5 @@
 #include "linkList.h"
-void initList(Node **node)
-{
-    head = *node;
-    
-}
+
 void add_node(Node **head, void *data) {
     Node *new_node = (Node *)malloc(sizeof(Node));
     new_node->data = data;

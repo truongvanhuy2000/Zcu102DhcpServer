@@ -10,8 +10,5 @@ typedef struct node {
     struct node *next;
 } Node;
 
-struct node *head = NULL;
-struct node *current = NULL;
-
 void initList(Node **node);
 #endif

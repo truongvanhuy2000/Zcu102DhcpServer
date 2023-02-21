@@ -9,7 +9,7 @@ int sock;
 struct sockaddr_in server_sock;
 struct netif *serverNetif;
 
-void fillDhcpPacket(dhcp_msg *request, dhcp_msg *reply, uint8_t type, const uint8_t *address);
+int fillDhcpPacket(dhcp_msg *request, dhcp_msg *reply, uint8_t type, const uint8_t *address);
 void answerClientRequest(dhcp_option *option, dhcp_msg *reply);
 void sendDhcpReply(dhcp_message *dhcp_msg);
 int discoverPacketHandler(dhcp_msg *request, dhcp_msg *reply);
@@ -53,12 +53,13 @@ int start_application(struct netif *netif)
 
 // This function will be used to listen to incoming packet and indentify it
 // if you want to listen to multiple client, just create another thread for this
-void dhcpListener()
+int dhcpListener()
 {
     xil_printf("Wait for DHCP Discovery Request");
     struct sockaddr_in client_sock;
     size_t socklen = sizeof(client_sock);
     size_t len;
+    int returnStatus;
 
     dhcp_msg requestMsg;
     dhcp_msg replyMsg;
@@ -91,10 +92,16 @@ void dhcpListener()
         switch (typeOption->data[0])
         {
         case DHCP_DISCOVER:
-            discoverPacketHandler(&requestMsg, &replyMsg);
+        	if(discoverPacketHandler(&requestMsg, &replyMsg))
+        	{
+        		returnStatus = 1;
+        	}
             break;
         case DHCP_REQUEST:
-            requestPacketHandler(&requestMsg, &replyMsg);
+        	if(requestPacketHandler(&requestMsg, &replyMsg))
+        	{
+        		returnStatus = 2;
+        	}
             break;
         case DHCP_DECLINE:
             break;
@@ -106,21 +113,26 @@ void dhcpListener()
             xil_printf("dhcp packet with invalid DHCP option\n");
             break;
         }
-        sendDhcpReply(&(replyMsg.hdr));
-
+        if(returnStatus)
+        {
+        	sendDhcpReply(&(replyMsg.hdr));
+        }
         // clean the option linked list to prevent memory leak
         deleteOptionList(replyMsg.opts);
         deleteOptionList(requestMsg.opts);
+        return returnStatus;
     }
 }
 
 // this one will be used to fill in the dhcp packet. Usually being used when sending
 // packet
-void fillDhcpPacket(dhcp_msg *request, dhcp_msg *reply, uint8_t type, const uint8_t *address)
+int fillDhcpPacket(dhcp_msg *request, dhcp_msg *reply, uint8_t type, const uint8_t *address)
 {
     dhcp_option_list *typeOption = malloc(sizeof(dhcp_option_list));
-    memset(&reply->hdr, 0, sizeof(reply->hdr));
-
+    if(!memset(&reply->hdr, 0, sizeof(reply->hdr)))
+    {
+    	return 0;
+    }
     // fill in the required parametter to match client
     reply->hdr.op = BOOTREPLY;
     reply->hdr.htype = request->hdr.htype;
@@ -146,6 +158,7 @@ void fillDhcpPacket(dhcp_msg *request, dhcp_msg *reply, uint8_t type, const uint
     {
         reply->hdr.yiaddr = *((uint32_t *)address);
     }
+    return 1;
 }
 
 // This function will answer client parametter request
@@ -197,8 +210,10 @@ int discoverPacketHandler(dhcp_msg *request, dhcp_msg *reply)
 {
     dhcp_option *parametterRequestOption;
     // fill in the the packet
-    fillDhcpPacket(request, reply, DHCP_OFFER, offerIp);
-
+    if(!fillDhcpPacket(request, reply, DHCP_OFFER, offerIp))
+    {
+    	return 0;
+    }
     // Seach for parametter request option
     parametterRequestOption = seachForOption(request->opts, PARAMETER_REQUEST_LIST);
     if (parametterRequestOption)
@@ -206,7 +221,10 @@ int discoverPacketHandler(dhcp_msg *request, dhcp_msg *reply)
         answerClientRequest(parametterRequestOption, reply);
     }
     dhcp_option option = getLeaseTimeOption(0xFFFFFFFF);
-    appendOptionToList(reply, &option);
+    if(!appendOptionToList(reply, &option))
+    {
+    	return 0;
+    }
     serializeOptionList(reply);
     return 1;
 }
@@ -215,8 +233,10 @@ int discoverPacketHandler(dhcp_msg *request, dhcp_msg *reply)
 int requestPacketHandler(dhcp_msg *request, dhcp_msg *reply)
 {
     dhcp_option *parametterRequestOption;
-    fillDhcpPacket(request, reply, DHCP_ACK, offerIp);
-
+    if(!fillDhcpPacket(request, reply, DHCP_ACK, offerIp))
+    {
+    	return 0;
+    }
     parametterRequestOption = seachForOption(request->opts, PARAMETER_REQUEST_LIST);
     if (parametterRequestOption)
     {
@@ -224,7 +244,10 @@ int requestPacketHandler(dhcp_msg *request, dhcp_msg *reply)
     }
     // set the lease time to be infinity because we only serve one client this time
     dhcp_option option = getLeaseTimeOption(0xFFFFFFFF);
-    appendOptionToList(reply, &option);
+    if(!appendOptionToList(reply, &option))
+    {
+    	return 0;
+    }
     serializeOptionList(reply);
     return 1;
 }

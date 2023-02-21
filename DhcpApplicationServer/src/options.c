@@ -93,7 +93,7 @@ int appendOptionToArray(uint8_t *optionArrPtr, dhcp_option *option)
     return optionLen;
 }
 
-void appendOptionToList(dhcp_msg *msg, dhcp_option *option)
+int appendOptionToList(dhcp_msg *msg, dhcp_option *option)
 {
     dhcp_option_list *temp;
     dhcp_option_list *ptr = msg->opts;
@@ -103,6 +103,10 @@ void appendOptionToList(dhcp_msg *msg, dhcp_option *option)
         ptr = ptr->next_option;
     }
     temp->next_option = malloc(sizeof(dhcp_option_list));
+    if(!temp->next_option)
+    {
+    	return 0;
+    }
     memset(temp->next_option, 0, sizeof(dhcp_option_list));
     temp->next_option->dhcp_option = *option;
     temp->next_option->next_option = NULL;

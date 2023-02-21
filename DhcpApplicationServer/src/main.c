@@ -40,7 +40,10 @@ void dhcpTask(void *pvParameters)
 {
 	while (1)
 	{
-		dhcpListener();
+		if(dhcpListener() == 2)
+		{
+			vTaskDelete(DhcpHandler);
+		}
 	}
 }
 static void initTask(void *pvParameters)

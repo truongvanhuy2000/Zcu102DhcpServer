@@ -21,5 +21,5 @@
 #define DHCP_PACKET_SIZE 236
 
 int start_application(struct netif *netif);
-void dhcpListener();
+int dhcpListener();
 #endif

@@ -15,7 +15,7 @@ int parseDhcpOptionList(dhcp_msg *msg);
 dhcp_option *seachForOption(dhcp_option_list *optionList, int optionCode);
 int appendOptionToArray(uint8_t *optionArrPtr, dhcp_option *option);
 void serializeOptionList(dhcp_msg *reply);
-void appendOptionToList(dhcp_msg *msg, dhcp_option *option);
+int appendOptionToList(dhcp_msg *msg, dhcp_option *option);
 
 dhcp_option getLeaseTimeOption(uint32_t time);
 dhcp_option getGatewayPara(uint8_t *gatewayAddr);

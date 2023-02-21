@@ -51,6 +51,16 @@ int start_application(struct netif *netif)
     return 1;
 }
 
+int closeApplication()
+{
+    if(close(sock) < 0) 
+    {
+        xil_printf("close socket error\n\n");
+        return 0;
+    }
+    return 1;
+}
+
 // This function will be used to listen to incoming packet and indentify it
 // if you want to listen to multiple client, just create another thread for this
 int dhcpListener()

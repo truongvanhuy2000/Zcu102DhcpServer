@@ -103,9 +103,9 @@ int appendOptionToList(dhcp_msg *msg, dhcp_option *option)
         ptr = ptr->next_option;
     }
     temp->next_option = malloc(sizeof(dhcp_option_list));
-    if(!temp->next_option)
+    if (!temp->next_option)
     {
-    	return 0;
+        return 0;
     }
     memset(temp->next_option, 0, sizeof(dhcp_option_list));
     temp->next_option->dhcp_option = *option;

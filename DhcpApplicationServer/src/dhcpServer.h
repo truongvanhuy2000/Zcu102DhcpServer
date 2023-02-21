@@ -22,4 +22,5 @@
 
 int start_application(struct netif *netif);
 int dhcpListener();
+int closeApplication();
 #endif

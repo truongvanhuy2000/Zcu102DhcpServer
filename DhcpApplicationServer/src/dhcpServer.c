@@ -53,7 +53,7 @@ int start_application(struct netif *netif)
 
 int closeApplication()
 {
-    if(close(sock) < 0) 
+    if (close(sock) < 0)
     {
         xil_printf("close socket error\n\n");
         return 0;
@@ -65,19 +65,23 @@ int closeApplication()
 // if you want to listen to multiple client, just create another thread for this
 int dhcpListener()
 {
-    xil_printf("Wait for DHCP Discovery Request");
+
     struct sockaddr_in client_sock;
     size_t socklen = sizeof(client_sock);
-    size_t len;
+    int len;
     int returnStatus;
-
     dhcp_msg requestMsg;
     dhcp_msg replyMsg;
     while (1)
     {
         memset(&requestMsg.hdr, 0, sizeof(requestMsg.hdr));
+        memset(&client_sock, 0, socklen);
         len = recvfrom(sock, &requestMsg.hdr, sizeof(requestMsg.hdr), MSG_DONTWAIT, (struct sockaddr *)&client_sock, &socklen);
         // 236 is the minium length of a dhcp data packet
+        if (checkValidIpv4Addr(client_sock.sin_addr.s_addr))
+        {
+            break;
+        }
         if (len < DHCP_PACKET_SIZE)
             continue;
         if (requestMsg.hdr.op != BOOTREQUEST)
@@ -126,6 +130,7 @@ int dhcpListener()
         if (returnStatus)
         {
             sendDhcpReply(&(replyMsg.hdr));
+            xil_printf("Send Ip to Client\n");
         }
         // clean the option linked list to prevent memory leak
         deleteOptionList(replyMsg.opts);
@@ -133,7 +138,27 @@ int dhcpListener()
         return returnStatus;
     }
 }
-
+int checkValidIpv4Addr(int addr)
+{
+    int validAddr = inet_addr("192.168.1.1");
+    if ((validAddr & 0xFF) != (addr & 0xFF))
+    {
+        return 0;
+    }
+    if (((validAddr >> 8) & 0xFF) != ((addr >> 4) & 0xFF))
+    {
+        return 0;
+    }
+    if (((validAddr >> 16) & 0xFF) != ((addr >> 16) & 0xFF))
+    {
+        return 0;
+    }
+    // if(((validAddr >> 24) & 0xFF) == ((addr >> 24) & 0xFF))
+    // {
+    //     return 0;
+    // }
+    return 1;
+}
 // this one will be used to fill in the dhcp packet. Usually being used when sending
 // packet
 int fillDhcpPacket(dhcp_msg *request, dhcp_msg *reply, uint8_t type, const uint8_t *address)

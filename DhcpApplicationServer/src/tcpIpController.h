@@ -17,4 +17,5 @@
 #define PLATFORM_EMAC_BASEADDR XPAR_XEMACPS_0_BASEADDR
 void xemacNetifInput(void);
 int tcpIpControllerInit();
+struct netif server_netif;
 #endif

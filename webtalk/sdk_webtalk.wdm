@@ -20,45 +20,33 @@ clients =
 	{ client_name = "sdk"; 
 		rules = (
 			{
-				context="sdk\\\\hardware/1676428787915";
-				xml_map="sdk\\\\hardware/1676428787915";
-				html_map="sdk\\\\hardware/1676428787915";
+				context="sdk\\\\bsp/1677142386158";
+				xml_map="sdk\\\\bsp/1677142386158";
+				html_map="sdk\\\\bsp/1677142386158";
 				html_format="UnisimStatsStyle";
 			},
 			{
-				context="sdk\\\\application/1676429047482";
-				xml_map="sdk\\\\application/1676429047482";
-				html_map="sdk\\\\application/1676429047482";
+				context="sdk\\\\application/1677142412947";
+				xml_map="sdk\\\\application/1677142412947";
+				html_map="sdk\\\\application/1677142412947";
 				html_format="UnisimStatsStyle";
 			},
 			{
-				context="sdk\\\\application/1676430521933";
-				xml_map="sdk\\\\application/1676430521933";
-				html_map="sdk\\\\application/1676430521933";
+				context="sdk\\\\bsp/1677145360507";
+				xml_map="sdk\\\\bsp/1677145360507";
+				html_map="sdk\\\\bsp/1677145360507";
 				html_format="UnisimStatsStyle";
 			},
 			{
-				context="sdk\\\\application/1676445122645";
-				xml_map="sdk\\\\application/1676445122645";
-				html_map="sdk\\\\application/1676445122645";
+				context="sdk\\\\application/1677145369842";
+				xml_map="sdk\\\\application/1677145369842";
+				html_map="sdk\\\\application/1677145369842";
 				html_format="UnisimStatsStyle";
 			},
 			{
-				context="sdk\\\\bsp/1676511250654";
-				xml_map="sdk\\\\bsp/1676511250654";
-				html_map="sdk\\\\bsp/1676511250654";
-				html_format="UnisimStatsStyle";
-			},
-			{
-				context="sdk\\\\application/1676511284727";
-				xml_map="sdk\\\\application/1676511284727";
-				html_map="sdk\\\\application/1676511284727";
-				html_format="UnisimStatsStyle";
-			},
-			{
-				context="sdk\\\\bsp/1676946056642";
-				xml_map="sdk\\\\bsp/1676946056642";
-				html_map="sdk\\\\bsp/1676946056642";
+				context="sdk\\\\bsp/1677149265002";
+				xml_map="sdk\\\\bsp/1677149265002";
+				html_map="sdk\\\\bsp/1677149265002";
 				html_format="UnisimStatsStyle";
 			}
 		);

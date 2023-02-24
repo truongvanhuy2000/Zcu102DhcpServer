@@ -737,9 +737,6 @@ BEGIN LIBRARY
  PARAMETER api_mode = SOCKET_API
  PARAMETER dhcp_does_arp_check = true
  PARAMETER lwip_dhcp = true
- PARAMETER memp_n_pbuf = 100
- PARAMETER memp_n_udp_pcb = 32
- PARAMETER memp_num_netbuf = 100
 END
 
 

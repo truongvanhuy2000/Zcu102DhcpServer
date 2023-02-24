@@ -61,10 +61,10 @@ int tcpIpControllerInit()
     print_ip_settings(&(netif->ip_addr), &(netif->netmask), &(netif->gw));
     xil_printf("\r\n");
     /* start the application*/
-    if (!start_application(netif))
-    {
-        return 0;
-    }
+//    if (!start_application(netif))
+//    {
+//        return 0;
+//    }
     xil_printf("\r\n");
     return 1;
 }

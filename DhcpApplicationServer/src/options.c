@@ -57,8 +57,11 @@ void deleteOptionList(dhcp_option_list *dhcpOptionList)
     while (ptr != NULL)
     {
         temp = ptr->next_option;
-        free(ptr->dhcp_option.data);
-		free(ptr);
+        if (ptr->dhcp_option.data)
+        {
+            free(ptr->dhcp_option.data);
+        }
+        free(ptr);
         ptr = temp;
     }
 }
@@ -69,9 +72,9 @@ int parseDhcpOption(dhcp_option *option, uint8_t *optionPtr)
     option->len = *(optionPtr + 1);
     option->data = malloc(option->len + 1);
 
-    if(!option->data)
+    if (!option->data)
     {
-    	return 0;
+        return 0;
     }
     memcpy(option->data, optionPtr + 2, option->len);
     optionLen = option->len + 2;
@@ -82,25 +85,28 @@ int parseDhcpOption(dhcp_option *option, uint8_t *optionPtr)
 int parseDhcpOptionList(dhcp_msg *msg)
 {
     dhcp_option_list *optionListPtr;
+    dhcp_option_list *optionListTempPtr;
     uint8_t *optionArrayPtr = msg->hdr.options;
-    int nextOptionPos;
-
-    msg->opts = malloc(sizeof(dhcp_option_list));
-    if (!msg->opts)
+    int optionLen;
+    if (*optionArrayPtr == END)
     {
         return 0;
     }
-    memset(msg->opts, 0, sizeof(dhcp_option_list));
-    optionListPtr = msg->opts;
-
+    msg->opts = optionListPtr;
     while (*optionArrayPtr != END)
     {
-        nextOptionPos = parseDhcpOption(&optionListPtr->dhcp_option, optionArrayPtr);
-        optionListPtr->next_option = malloc(sizeof(dhcp_option_list));
+        optionListPtr = malloc(sizeof(dhcp_option_list));
+        optionListTempPtr = optionListPtr;
+        if (!optionListPtr)
+        {
+            return 0;
+        }
+        optionLen = parseDhcpOption(&optionListTempPtr->dhcp_option, optionArrayPtr);
         optionListPtr = optionListPtr->next_option;
-        optionArrayPtr += nextOptionPos;
+        optionListTempPtr->next_option = optionListPtr;
+        optionArrayPtr += optionLen;
     }
-    optionListPtr->next_option = NULL;
+    optionListTempPtr->next_option = NULL;
     return 1;
 }
 

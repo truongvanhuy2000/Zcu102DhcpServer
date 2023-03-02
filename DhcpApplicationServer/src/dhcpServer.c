@@ -78,6 +78,7 @@ int dhcpListener()
     while (1)
     {
         memset(&requestMsg.hdr, 0, sizeof(requestMsg.hdr));
+        requestMsg.opts = NULL;
         memset(&client_sock, 0, socklen);
         len = recvfrom(sock, &requestMsg.hdr, sizeof(requestMsg.hdr), MSG_DONTWAIT, (struct sockaddr *)&client_sock, &socklen);
         // 236 is the minium length of a dhcp data packet

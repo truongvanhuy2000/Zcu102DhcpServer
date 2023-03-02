@@ -9,6 +9,8 @@
 #include "dhcpServer.h"
 #include "httpApplication.h"
 
+#define THREAD_STACKSIZE 1024
+
 static TaskHandle_t xemacInputHandle;
 static TaskHandle_t DhcpHandler;
 static TaskHandle_t httpPostHandler;
@@ -21,14 +23,14 @@ static void httpPostTask(void *pvParameters);
 
 int main()
 {
-	xTaskCreate(xemacInputTask, (const char *)"xemac", 500,
+	xTaskCreate(xemacInputTask, (const char *)"xemac", THREAD_STACKSIZE,
 				NULL, 1, &xemacInputHandle);
-	xTaskCreate(dhcpTask, (const char *)"dhcp", 1000,
+	xTaskCreate(dhcpTask, (const char *)"dhcp", THREAD_STACKSIZE,
 				NULL, 1, &DhcpHandler);
-	xTaskCreate(httpPostTask, (const char *)"httpPost", 1000,
+	xTaskCreate(httpPostTask, (const char *)"httpPost", THREAD_STACKSIZE,
 				NULL, 1, &httpPostHandler);
 
-	xTaskCreate(initTask, (const char *)"init", 1000,
+	xTaskCreate(initTask, (const char *)"init", THREAD_STACKSIZE,
 				NULL, 2, &startTaskHandle);
 	vTaskStartScheduler();
 	while (1)

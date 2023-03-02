@@ -175,7 +175,7 @@ struct dhcp_option
 {
     uint8_t id;        // option id
     uint8_t len;       // option length
-    uint8_t data[256]; // option data
+    uint8_t *data; // option data
 };
 typedef struct dhcp_option dhcp_option;
 

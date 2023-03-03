@@ -18,6 +18,7 @@ int discoverPacketHandler(dhcp_msg *request, dhcp_msg *reply);
 int requestPacketHandler(dhcp_msg *request, dhcp_msg *reply);
 
 // Start the dhcp application
+//netif parametter is the network interface you created when init lwip
 int start_application(struct netif *netif)
 {
     int enable_broadcast = 1;

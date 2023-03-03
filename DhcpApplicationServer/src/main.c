@@ -5,7 +5,7 @@
 
 #include "xil_printf.h"
 #include "xparameters.h"
-#include "tcpIpController.h"
+#include "networkInit.h"
 #include "dhcpServer.h"
 #include "httpApplication.h"
 
@@ -60,7 +60,7 @@ void dhcpTask(void *pvParameters)
 }
 static void initTask(void *pvParameters)
 {
-	if (!tcpIpControllerInit())
+	if (!networkInit())
 	{
 		print("TCP/IP configuration error");
 		return;

@@ -1,4 +1,6 @@
 #include "options.h"
+
+//This function is used for creating new option for dhcp packet
 dhcp_option createOption(uint8_t optionID, uint8_t optionLen, uint8_t *optionData)
 {
     dhcp_option newOption;
@@ -12,6 +14,7 @@ dhcp_option createOption(uint8_t optionID, uint8_t optionLen, uint8_t *optionDat
     return newOption;
 }
 
+//used for release the allocated memory for dhcp option linked list
 void deleteOptionList(dhcp_option_list *dhcpOptionList)
 {
     dhcp_option_list *ptr;
@@ -29,6 +32,8 @@ void deleteOptionList(dhcp_option_list *dhcpOptionList)
         ptr = temp;
     }
 }
+
+//is used for parse the indivisual option
 int parseDhcpOption(dhcp_option *option, uint8_t *optionPtr)
 {
     int optionLen;
@@ -46,6 +51,7 @@ int parseDhcpOption(dhcp_option *option, uint8_t *optionPtr)
     return optionLen;
 }
 
+//used to parse the serialized dhcp option into linked list
 int parseDhcpOptionList(dhcp_msg *msg)
 {
     dhcp_option_list *optionListPtr;
@@ -80,6 +86,7 @@ int parseDhcpOptionList(dhcp_msg *msg)
     return 1;
 }
 
+//used to seach for a specific option using its id
 dhcp_option *seachForOption(dhcp_option_list *optionList, int optionCode)
 {
     while (optionList != NULL)
@@ -92,6 +99,8 @@ dhcp_option *seachForOption(dhcp_option_list *optionList, int optionCode)
     }
     return NULL;
 }
+
+//append the option to the an array
 int appendOptionToArray(uint8_t *optionArrPtr, dhcp_option *option)
 {
     int optionLen;
@@ -102,6 +111,7 @@ int appendOptionToArray(uint8_t *optionArrPtr, dhcp_option *option)
     return optionLen;
 }
 
+//append the option to the last of the linked list
 int appendOptionToList(dhcp_msg *msg, dhcp_option *option)
 {
     dhcp_option_list *temp;
@@ -121,6 +131,8 @@ int appendOptionToList(dhcp_msg *msg, dhcp_option *option)
     temp->next_option->next_option = NULL;
     return 1;
 }
+
+//serialize the data before sending
 void serializeOptionList(dhcp_msg *reply)
 {
     uint8_t *optionArrPtr = reply->hdr.options;

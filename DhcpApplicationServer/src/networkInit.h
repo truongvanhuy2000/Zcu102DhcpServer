@@ -1,5 +1,5 @@
-#ifndef TCP_IP_CONTROLLER
-#define TCP_IP_CONTROLLER
+#ifndef NETWORK_CONTROLLER
+#define NETWORK_CONTROLLER
 #include <stdio.h>
 #include "xparameters.h"
 #include "netif/xadapter.h"
@@ -16,6 +16,6 @@
 #define DEFAULT_GW_ADDRESS "192.168.1.1"
 #define PLATFORM_EMAC_BASEADDR XPAR_XEMACPS_0_BASEADDR
 void xemacNetifInput(void);
-int tcpIpControllerInit();
+int networkInit();
 struct netif server_netif;
 #endif

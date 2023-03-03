@@ -1,4 +1,4 @@
-#include "tcpIpController.h"
+#include "networkInit.h"
 struct netif server_netif;
 static void print_ip(char *msg, ip_addr_t *ip)
 {
@@ -35,7 +35,7 @@ void xemacNetifInput(void)
 {
     xemacif_input(&server_netif);
 }
-int tcpIpControllerInit()
+int networkInit()
 {
     struct netif *netif;
 
@@ -61,10 +61,10 @@ int tcpIpControllerInit()
     print_ip_settings(&(netif->ip_addr), &(netif->netmask), &(netif->gw));
     xil_printf("\r\n");
     /* start the application*/
-//    if (!start_application(netif))
-//    {
-//        return 0;
-//    }
+    //    if (!start_application(netif))
+    //    {
+    //        return 0;
+    //    }
     xil_printf("\r\n");
     return 1;
 }

@@ -19,8 +19,4 @@ int appendOptionToList(dhcp_msg *msg, dhcp_option *option);
 
 dhcp_option createOption(uint8_t optionID, uint8_t optionLen, uint8_t *optionData);
 
-dhcp_option getLeaseTimeOption(uint32_t time);
-dhcp_option getGatewayPara(uint8_t *gatewayAddr);
-dhcp_option getSubnetPara(uint8_t *subnetMask);
-
 #endif

@@ -11,42 +11,6 @@ dhcp_option createOption(uint8_t optionID, uint8_t optionLen, uint8_t *optionDat
     }
     return newOption;
 }
-dhcp_option getLeaseTimeOption(uint32_t time)
-{
-    dhcp_option leaseTime;
-    leaseTime.id = IP_ADDRESS_LEASE_TIME;
-    leaseTime.len = 4;
-    leaseTime.data = malloc(leaseTime.len + 1);
-    if (leaseTime.data)
-    {
-        memcpy(leaseTime.data, &time, leaseTime.len);
-    }
-    return leaseTime;
-}
-dhcp_option getGatewayPara(uint8_t *gatewayAddr)
-{
-    dhcp_option newOption;
-    newOption.id = ROUTER;
-    newOption.len = 4;
-    newOption.data = malloc(newOption.len + 1);
-    if (newOption.data)
-    {
-        memcpy(newOption.data, gatewayAddr, newOption.len);
-    }
-    return newOption;
-}
-dhcp_option getSubnetPara(uint8_t *subnetMask)
-{
-    dhcp_option newOption;
-    newOption.id = SUBNET_MASK;
-    newOption.len = 4;
-    newOption.data = malloc(newOption.len + 1);
-    if (newOption.data)
-    {
-        memcpy(newOption.data, subnetMask, newOption.len);
-    }
-    return newOption;
-}
 
 void deleteOptionList(dhcp_option_list *dhcpOptionList)
 {
@@ -92,21 +56,27 @@ int parseDhcpOptionList(dhcp_msg *msg)
     {
         return 0;
     }
-    msg->opts = optionListPtr;
-    while (*optionArrayPtr != END)
+    msg->opts = malloc(sizeof(dhcp_option_list));
+    optionListPtr = msg->opts;
+    while (1)
     {
-        optionListPtr = malloc(sizeof(dhcp_option_list));
-        optionListTempPtr = optionListPtr;
-        if (!optionListPtr)
-        {
-            return 0;
-        }
-        optionLen = parseDhcpOption(&optionListTempPtr->dhcp_option, optionArrayPtr);
-        optionListPtr = optionListPtr->next_option;
-        optionListTempPtr->next_option = optionListPtr;
+        optionLen = parseDhcpOption(&optionListPtr->dhcp_option, optionArrayPtr);
+        optionListPtr->next_option = NULL;
         optionArrayPtr += optionLen;
+        if(*optionArrayPtr == END)
+        {
+        	break;
+        }
+        optionListTempPtr = optionListPtr;
+        optionListPtr = optionListPtr->next_option;
+        optionListPtr = malloc(sizeof(dhcp_option_list));
+    	if (!optionListPtr)
+		{
+			return 0;
+		}
+        optionListTempPtr->next_option = optionListPtr;
+
     }
-    optionListTempPtr->next_option = NULL;
     return 1;
 }
 
